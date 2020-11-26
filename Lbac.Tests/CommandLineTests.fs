@@ -7,7 +7,7 @@
 
     [<TestClass>]
     type CommandLineTests() = class
-        let parse_with_fake_output args = 
+        let parse_with_fake_output args =
             let outw = new StringBuilder()
             let error = new StringBuilder()
 
@@ -16,7 +16,7 @@
             (actual, outw.ToString(), error.ToString())
 
         [<TestMethod>]
-        member x.parse_should_find_inFile() = 
+        member x.parse_should_find_inFile() =
             let expected = "foo.txt"
             let args = [| "programname.exe"; "-i"; expected; "-o"; "bar.exe" |]
 
@@ -28,7 +28,7 @@
             Assert.IsTrue(actual.Valid)
 
         [<TestMethod>]
-        member x.parse_should_find_outFile() = 
+        member x.parse_should_find_outFile() =
             let expected = "bar.exe"
             let args = [| "programname.exe"; "-i"; "foo.txt"; "-o"; expected |]
 
@@ -40,7 +40,7 @@
             Assert.IsTrue(actual.Valid)
 
         [<TestMethod>]
-        member x.parse_should_prompt_for_missing_values() = 
+        member x.parse_should_prompt_for_missing_values() =
             let expected = Some 1
             let args = [| "programname.exe"; "-i" |]
 

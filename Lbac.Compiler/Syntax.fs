@@ -1,5 +1,5 @@
 ﻿module Syntax
-    
+
     open Railway
     open Lex
 
@@ -18,7 +18,7 @@
         | Binary   of Expr * Operator * Expr
         | Error of string
 
-    type ParseResult = { Lines: Expr list; Locals: Set<string> } 
+    type ParseResult = { Lines: Expr list; Locals: Set<string> }
 
     /// Converts token list to Success(AST) if valid or Error if not
     let rec parseLine (acc: ParseResult) (tokens: Token list): ParseResult =
@@ -37,8 +37,8 @@
 
         /// factor ::= (expression) | number | ident
         let rec factor acc = function
-            | Symbol '(' :: rest   -> 
-                match expression acc rest with 
+            | Symbol '(' :: rest   ->
+                match expression acc rest with
                 | exp, Symbol ')' :: rest', acc' -> exp, rest', acc'
                 | _, rest', acc'                 -> Error("')' expected."), rest', acc'
             | Token.Number n :: ts -> Number(n), ts, acc
@@ -47,82 +47,82 @@
         /// ident = function() | variable
         and ident acc = function
             | Identifier id :: rest ->
-                match rest with 
+                match rest with
                 | Symbol '(' :: rest' -> // function invocation
-                    match rest' with 
-                    // No support for argument passing yet. 
+                    match rest' with
+                    // No support for argument passing yet.
                     // Only valid function invocation is empty parens: foo()
                     | Symbol ')' :: rest'' -> Invoke(id), rest'', acc
                     | _                    -> Error ("')' expected"), rest', acc
-                | _                   -> // dereference       
+                | _                   -> // dereference
                     match acc.Locals.Contains(id) with
                     | true  -> Variable(id), rest, acc
                     | false -> Error(sprintf "Variable %A not declared" id), rest, acc
             | _ -> Error("Identifier expected"), [], acc
-            
+
         /// term ::= factor  [ mulop factor ]*
-        and term acc (tokens: Token list) = 
+        and term acc (tokens: Token list) =
             let left, rightTokens, acc' = factor acc tokens
             match rightTokens, toMulOp rightTokens with
-                | mulOpSym :: ts, Some mulOp -> 
+                | mulOpSym :: ts, Some mulOp ->
                     let right, rest, acc'' = expression acc' ts
                     Binary(left, mulOp, right), rest, acc''
                 | _ -> left, rightTokens, acc'
 
         and unary acc = function
-            | Symbol '-' :: rest -> 
+            | Symbol '-' :: rest ->
                 match term acc rest with
                 | e, rest', acc' -> Minus(e), rest', acc'
             | tokens -> term acc tokens
 
-        and assign acc = function 
+        and assign acc = function
             | Identifier name :: rest ->
                 match rest with
-                | Symbol('=') :: rest' -> 
+                | Symbol('=') :: rest' ->
                     let rhs, rest'', acc' = expression { acc with Locals = acc.Locals.Add(name) } rest'
                     Some(Assign(Variable(name), rhs), rest'', acc')
                 | _ -> None
             | _ -> None
-                
-        /// expression ::= [addop] term [addop term]* 
-        and expression acc tokens = 
-            match assign acc tokens with 
+
+        /// expression ::= [addop] term [addop term]*
+        and expression acc tokens =
+            match assign acc tokens with
                 | Some assignment -> assignment
-                | None -> 
+                | None ->
                     let leftExpr, rightTokens, acc' = unary acc tokens
                     match rightTokens, toAddOp rightTokens with
-                        | addOpSym :: ts, Some addOp -> 
+                        | addOpSym :: ts, Some addOp ->
                             let right, rest, acc'' = expression acc' ts
                             Binary(leftExpr, addOp, right), rest, acc''
                         | _ -> leftExpr, rightTokens, acc'
 
-        let ast, rest, acc' = expression acc tokens 
+        let ast, rest, acc' = expression acc tokens
 
-        match rest with 
-        | [] 
+        match rest with
+        | []
         | NewLine :: []    -> { acc' with Lines = acc.Lines @ [ast] } // done!
-        | NewLine :: rest' -> parseLine { acc' with Lines = acc.Lines @ [ast] } rest' 
+        | NewLine :: rest' -> parseLine { acc' with Lines = acc.Lines @ [ast] } rest'
         // If anything remains on line, it's a syntax error
         | wrong   :: _     -> { acc' with Lines = [ Error("Unexpected token: " + (sprintf "%A" wrong)) ] }
 
     let tryParse (tokens: Token list): ParseResult =
-        parseLine { Lines = []; Locals = Set.empty } tokens 
+        parseLine { Lines = []; Locals = Set.empty } tokens
 
-    let errorMessagesFor expr = 
-        let rec errorMessagesForImpl acc = function 
-            | Minus  expr                -> acc @ errorMessagesForImpl acc expr 
+    let errorMessagesFor expr =
+        let rec errorMessagesForImpl acc = function
+            | Minus  expr                -> acc @ errorMessagesForImpl acc expr
             | Assign (name, value)       -> acc @ errorMessagesForImpl acc value @ errorMessagesForImpl acc name
             | Binary (left, oper, right) -> acc @ errorMessagesForImpl acc right @ errorMessagesForImpl acc left
             | Error  message          -> [message]
-            | Number   _ 
-            | Variable _ 
+            | Number   _
+            | Variable _
             | Invoke   _                 -> acc
         errorMessagesForImpl [] expr
 
     let errorsForLines (lines: Expr list) =
         List.collect errorMessagesFor lines
-        
-    let parse (tokens: Token list): Result<ParseResult, string> = 
+
+    let parse (tokens: Token list): Result<ParseResult, string> =
         let result = tryParse tokens
         match errorsForLines result.Lines with
         | []     -> Success(result)

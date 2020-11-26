@@ -13,13 +13,13 @@
             | c :: rest when Char.IsLetterOrDigit(c) ->
                 readIdentifier (acc + c.ToString()) rest
             | rest -> Identifier(acc), rest
-        let rec readNumber acc = function 
+        let rec readNumber acc = function
             | d :: rest when Char.IsDigit(d) ->
                 readNumber (acc + d.ToString()) rest
             | rest -> Number(Int32.Parse(acc)), rest
-        let rec tokenizeLine acc = function 
-            | n :: rest when charIsCrlf n     -> 
-                match acc with 
+        let rec tokenizeLine acc = function
+            | n :: rest when charIsCrlf n     ->
+                match acc with
                     | [] -> acc, rest
                     | _  -> (NewLine :: acc), rest
             | d :: rest when Char.IsDigit(d)  ->
@@ -32,7 +32,8 @@
             | ws :: rest when Char.IsWhiteSpace(ws) -> tokenizeLine acc rest
             | c :: rest -> tokenizeLine (Symbol(c) :: acc) rest
         let rec beginningOfLine acc input =
-            match tokenizeLine [] input with 
+            match tokenizeLine [] input with
             | tokens, [] -> tokens @ acc
             | acc', rest -> (beginningOfLine [] rest) @ acc' @acc
+
         List.rev (beginningOfLine [] (List.ofSeq input))

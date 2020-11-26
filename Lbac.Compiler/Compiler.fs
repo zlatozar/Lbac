@@ -1,4 +1,5 @@
 ﻿module Compiler
+
     open System.Reflection
     open Lex
     open Syntax
