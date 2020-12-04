@@ -80,10 +80,7 @@
         | Stloc_S  i     -> ilg.Emit(OpCodes.Stloc_S, i)
         | Sub            -> ilg.Emit(OpCodes.Sub)
 
-    // Links:
-    // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.emit.ilgenerator.emit?redirectedfrom=MSDN&view=net-5.0#overloads
-    // https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-4.0/3y322t50(v=vs.100)?redirectedfrom=MSDN
-    // https://archive.codeplex.com/?p=cciast
+    // "Metaprogramming in .NET" by Hazzard and Bock
     let private compileEntryPoint (moduleContainingMethod : ModuleBuilder) (methodToCall: MethodBuilder) =
         let mb =
             let tb =
